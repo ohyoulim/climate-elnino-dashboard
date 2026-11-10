@@ -1,36 +1,136 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🌍 슈퍼 엘니뇨 극한 강수 & 기습 한파 실시간 조기경보 웹 대시보드
+> **Super El Niño Climate Disaster Early Warning & Monitoring Dashboard**  
+> 기상청 단기예보 파이프라인, 30년 기후평년값 이상기후 감지 알고리즘, 지오테크 인터랙티브 맵, Google Gemini 3.5 기반 시민·농가 맞춤 방재 시스템
 
-## Getting Started
+---
 
-First, run the development server:
+## 📌 1. 문제 배경 (Problem Background)
+* **적도 태평양 해수면 온도 평년 대비 +2.4℃ 상승**: 강력한 슈퍼 엘니뇨(Super El Niño) 발달
+* **극한 강수 위험**: 11~12월 한반도 대기 수증기량 급증으로 **평년의 2배~10배(시간당 30~50mm)에 달하는 이례적 기습 폭우** 발생
+* **기습 한파 위험**: 제트기류 약화로 북극발 시베리아 찬 공기가 직하강하며 **하루 만에 10~25℃가 곤두박질치는 기습 한파(한파특보 기준 충족)** 급습
+* **방재 목표**: 고양시 및 수도권 저지대 침수와 농가 시설하우스 동해 피해를 사전에 조기 감지하여 시민과 농가에 골든타임 행동 요령 제공
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## ⚙️ 2. 핵심 기술 아키텍처
+
+```
+[ 기상청 단기예보 공공데이터 API ] ──────┐
+(T1H/TMP, RN1/PCP, SKY, PTY)          │
+                                       ▼
+                     [ 이상기후 감지 알고리즘 ]
+                     • 기상청 30년(1991~2020) 신 기후평년값 매트릭스
+                     • 기습 한파특보 공식 기준 (24h 강하폭 ≥ 10℃ / 15℃)
+                     • 극한 강우 3단계 기준 (15mm 주의 / 30mm 경고 / 50mm 심각)
+                     • 주의-경고-심각 3단계 경보 판정
+                                       │
+        ┌──────────────────────────────┴──────────────────────────────┐
+        ▼                                                             ▼
+[ Antigravity 지오테크 프론트엔드 ]                           [ Google Gemini 최신 SDK ]
+• 좌측 관제 사이드바 (4종 시나리오 컨트롤러)                    • model: gemini-3.5-flash-lite
+• 실시간 콤보 시계열 차트 (Chart.js 듀얼 Y축)                  • 기상 데이터 기반 심층 위험도 진단
+• 고양·수도권 벡터 위험 구역 인터랙티브 맵 (SVG)               • 👥 시민 맞춤 행동 요령 (3줄 요약)
+• 3단계 엘니뇨 경보 게이지 위젯                                • 🚜 농가 맞춤 행동 요령 (3줄 요약)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📊 3. 이상기후 감지 알고리즘 상세 (Climate Algorithm)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### ① 12개월 전천후 기후평년값 매트릭스
+대한민국 기상청(KMA) 공식 **1991년~2020년 30년 신(新) 기후평년값**을 바탕으로, 단기예보 호출 시점의 `month`를 자동 추출하여 월별 표준치와 비교합니다.
 
-## Learn More
+### ② 기습 한파특보 법정 기준식
+기상청 기상특보 기준법을 정량화하여 실시간 산출:
+* **주의 (Watch)**: 1시간 내 기온 강하폭 $\ge 3℃/h$
+* **경고 (Warning - 한파주의보 기준)**: 24시간 내 기온 강하폭 $\ge 10℃$ 이고 최저기온 $\le 3℃$
+* **심각 (Emergency - 한파경보 기준)**: 24시간 내 기온 강하폭 $\ge 15℃$ 및 평년 최저치 하회(영하권 급랭)
 
-To learn more about Next.js, take a look at the following resources:
+### ③ 슈퍼 엘니뇨 극한 강수 기준식
+* **주의 (15mm/h ~ 29mm/h)**: 평년 11월 강수의 5배 초과 기습 폭우 (배수구 역류 주의)
+* **경고 (30mm/h ~ 49mm/h)**: 호우경보급 집중호우 (도심 저지대 침수)
+* **심각 (50mm/h 이상)**: 슈퍼 엘니뇨 극한 강우 (지하차도 즉시 진입금지 및 하천 범람 위험)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🗺️ 4. 지오테크 고양·수도권 위험 구역 인터랙티브 맵 (Geotech Spatial Map)
 
-## Deploy on Vercel
+동일한 기상 상황이라도 **지리적 입지, 하천 수계, 도시 인프라(불투수면), 시설 농가 분포**에 따라 재난 위험의 양상이 완전히 다릅니다. 본 대시보드는 수도권 북부 4대 핵심 거점을 벡터 지도로 시각화하여 차등화된 공간 방재 관제를 제공합니다.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+                [ 북 쪽 : 파주 접경 ]  ➔ 북극 기습 한기 최우선 유입 (기온 최저)
+                         │
+     ┌───────────────────┼───────────────────┐
+     │                   │                   │
+[ 일산서구 (대화/가좌) ]  [ 일산동구 (중심도심) ]   [ 덕양구 (삼송/화전) ]
+ 저지대 배수 역류 취약     도심 지하차도 침수 취약    창릉천 수위 & 비닐하우스 밀집
+     └───────────────────┬───────────────────┘
+                         │
+                 [ 남 쪽 : 한강 수계 ]  ➔ 강물 수위 감시선
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### ① 4대 권역별 지리적 특성 및 방재 매뉴얼
+| 권역 | 지리적·환경적 입지 특성 | 기후 재난 위험 요인 | 시스템 맞춤 방재 권고 |
+| :--- | :--- | :--- | :--- |
+| **파주시 문산·교하권역** | 북한 및 임진강 수계와 맞닿은 최북단 개활지 | **북극발 기습 한기 최우선 직격** (기온 급락, 권역 최저 기온) | ❄️ **하우스 보온 가동**, 농작물 동해 방지 |
+| **고양시 일산서구 (대화·가좌)** | 자유로 인접 평탄 저지대 및 농경지 | 한강 본류 수위 상승 시 **배수로 역류 및 농경지 침수** | ⚠️ 배수 펌프장 가동 점검, 농로 통제 |
+| **고양시 일산동구 (라페스타·백석)** | 고층 빌딩과 지하철역이 밀집된 중심 도심부 | 아스팔트 불투수면 비율이 높아 **지하차도 및 상가 지하층 침수** | ⚠️ **지하차도 차단 권고**, 빗물받이 정비 |
+| **고양시 덕양구 (화전·삼송)** | 창릉천 유역 인접 및 화전동 대규모 시설 원예 단지 | **창릉천 수위 급상승** 및 비닐하우스 밀집지 급랭·침수 복합 피해 | ⚠️ 천변 산책로 차단, 하우스 열풍기 가동 |
+
+### ② 인터랙티브 기능 & 동적 위험도 시각화
+* **양방향 인터랙티브 연동**: SVG 벡터 지도 구역이나 하단 권역 카드를 클릭하면 선택된 구역이 하이라이트되며, 우측 상단 브리핑 패널에 실시간 기온, 강수량, 특보 단계, 현장 방재 권고가 즉시 표출됩니다.
+* **실시간 위험도 테마 (Dynamic Coloring)**:
+  * 🟢 **정상 단계**: 평년 기후 범위 유지 시 지도 전체가 안정적인 에메랄드(초록) 테마로 표출
+  * 🟡 **주의 단계**: 시간당 15mm 이상 강우 시 주의보급 경보
+  * 🟠 **경고 단계**: 시간당 30mm 호우경보급 또는 한파주의보 기준 충족 시 주황색 경보
+  * 🔴 **심각 단계**: 시간당 50mm 극한 폭우 또는 한파경보 기준 충족 시 붉은색 경보 점멸
+* **기상 시나리오 동적 연동**: 좌측 사이드바에서 [기습 한파], [극한 호우], [복합 재난], [평년 정상]을 선택하면 각 권역별 지형 특성에 따라 기온과 강수량이 실시간 재계산되어 지도에 즉시 반영됩니다.
+
+---
+
+## 🕹️ 5. 관제 사이드바 시뮬레이터 (4대 시나리오)
+
+좌측 사이드바에서 원클릭으로 다양한 기후 재난 상황을 시뮬레이션할 수 있습니다:
+
+1. ⚡ **복합 재난 시나리오**: 낮 34mm 폭우(호우경보) + 밤 23℃ 급락(한파경보)이 동시 발생하는 엘니뇨 전형 위기
+2. 🌧️ **극한 호우 시나리오**: 시간당 46mm 집중호우 침수 위험
+3. ❄️ **기습 한파 시나리오**: 하루 만에 기온이 25℃ 폭락하는 한파경보 시나리오
+4. ☀️ **평년 정상 시나리오**: 11월 평년 쾌청 날씨 (이상기후 감지 0개)
+5. 🟢 **기상청 실시간 현재 상태 [LIVE]**: 지금 현재 고양시의 실제 기상청 관측치로 즉시 복귀
+
+---
+
+## 🚀 6. 실행 및 환경변수 설정
+
+### 1) 환경변수 설정 (`.env.local`)
+```env
+# 기상청 공공데이터포털(data.go.kr) 단기예보 조회서비스 인증키
+KMA_SERVICE_KEY=your_kma_service_key
+
+# Google AI Studio Gemini API 키 (AQ... 및 AIza... 형식 모두 지원)
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+### 2) 프로젝트 실행
+```bash
+# 의존성 설치
+npm install
+
+# 개발 서버 실행
+npm run dev
+
+# 빌드 및 프로덕션 실행
+npm run build
+npm run start
+```
+
+* **대시보드 접속 주소**: [http://localhost:3000](http://localhost:3000)
+
+---
+
+## 🛠️ 7. 기술 스택 (Tech Stack)
+* **Framework**: Next.js 16 (App Router), React 19, TypeScript
+* **Styling**: Tailwind CSS
+* **Data Visualization**: Chart.js, react-chartjs-2, SVG Interactive Vector Maps
+* **AI Engine**: `@google/genai` (Google Gen AI SDK v3.0.0), `gemini-3.5-flash-lite`
+* **Data Source**: 대한민국 기상청 공공데이터포털(data.go.kr) 단기예보 API, 기상청 30년 기후평년값
