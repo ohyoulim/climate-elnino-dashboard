@@ -8,12 +8,15 @@ import {
   PointElement,
   LineElement,
   BarElement,
+  LineController,
+  BarController,
   Tooltip,
   Legend,
   Filler,
   ChartData,
   ChartOptions,
 } from 'chart.js';
+import 'chart.js/auto';
 import { Chart } from 'react-chartjs-2';
 import {
   AlertTriangle,
@@ -43,6 +46,8 @@ ChartJS.register(
   PointElement,
   LineElement,
   BarElement,
+  LineController,
+  BarController,
   Tooltip,
   Legend,
   Filler

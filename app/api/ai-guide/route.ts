@@ -245,6 +245,7 @@ export async function POST(req: NextRequest) {
       .replace(/^```json\s*/i, '')
       .replace(/^```\s*/i, '')
       .replace(/```$/i, '')
+      .replace(/,\s*([}\]])/g, '$1')
       .trim();
 
     const parsed = JSON.parse(cleanedJson);
